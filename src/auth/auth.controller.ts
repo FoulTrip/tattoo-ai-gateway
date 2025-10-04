@@ -18,6 +18,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiConflictResponse,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -34,6 +35,11 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiHeader({
+    name: 'user-agent',
+    description: 'User agent string',
+    required: false,
+  })
   @ApiOperation({
     summary: 'Register a new user',
     description: 'Creates a new user account and returns authentication tokens.',
@@ -51,7 +57,7 @@ export class AuthController {
   async register(
     @Body() registerDto: RegisterDto,
     @Ip() ip: string,
-    @Headers('user-agent') userAgent: string,
+    @Headers('user-agent') userAgent?: string,
   ): Promise<AuthResponseDto> {
     return this.authService.register(registerDto, ip, userAgent);
   }

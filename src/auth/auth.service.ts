@@ -3,17 +3,18 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UsersRepository } from '../user/repositories/users.repository';
+import { UsersService } from '../user/user.service';
 import { AuditService } from '../audit/audit.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto, TokenResponseDto } from './dto/auth-response.dto';
 import { UserResponseDto } from '../user/dto/user-response.dto';
-import { UserType } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersRepository: UsersRepository,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
     private auditService: AuditService,
@@ -26,43 +27,24 @@ export class AuthService {
       throw new ConflictException('Email already exists');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-
-    // Create user
-    const userData = {
+    // Create user using UsersService (which handles password hashing and tenant creation)
+    const user = await this.usersService.create({
       email: registerDto.email,
-      password: hashedPassword,
+      password: registerDto.password,
       name: registerDto.name,
-      phone: registerDto.phone || null,
-      avatar: registerDto.avatar || null,
+      phone: registerDto.phone,
+      avatar: registerDto.avatar,
       userType: registerDto.userType,
-    };
+    }, ipAddress, userAgent);
 
-    const dbUser = await this.usersRepository.create(userData);
-
-    // Convert to UserResponseDto
-    const user = new UserResponseDto({
-      ...dbUser,
-      phone: dbUser.phone ?? undefined,
-      avatar: dbUser.avatar ?? undefined,
-    });
+    // Get the full user object for token generation
+    const dbUser = await this.usersRepository.findById(user.id);
+    if (!dbUser) {
+      throw new Error('User not found after creation');
+    }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user);
-
-    // Log successful registration
-    await this.auditService.log({
-      action: 'USER_CREATED',
-      severity: 'INFO',
-      description: `Usuario registrado: ${user.email}`,
-      resourceId: user.id,
-      resourceType: 'USER',
-      actorId: user.id,
-      ipAddress,
-      userAgent,
-      success: true,
-    });
+    const tokens = await this.generateTokens(dbUser);
 
     return {
       ...tokens,

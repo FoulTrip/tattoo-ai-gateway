@@ -6,18 +6,20 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersRepository } from '../user/repositories/users.repository';
+import { UserModule } from '../user/user.module';
 import { AuditModule } from '../audit/audit.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
+    UserModule,
     PrismaModule,
     AuditModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', 'your-secret-key'),
+        secret: configService.get<string>('JWT_SECRET'!),
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRES_IN', '1h'),
         },

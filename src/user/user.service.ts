@@ -8,6 +8,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
 import { HelpersAuditService } from '../audit/services/helpers.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { UserType } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +19,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly auditHelper: HelpersAuditService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) { }
 
   async create(createUserDto: CreateUserDto, ipAddress?: string, userAgent?: string): Promise<UserResponseDto> {
@@ -35,6 +38,20 @@ export class UsersService {
       ...createUserDto,
       password: hashedPassword,
     });
+
+    // Si el usuario es TATUADOR, crear un tenant
+    if (user.userType === UserType.TATUADOR) {
+      await this.prisma.tenant.create({
+        data: {
+          name: `${user.name} Studio`,
+          ownerId: user.id,
+          email: user.email,
+          phone: user.phone,
+        },
+      });
+
+      this.logger.log(`Tenant created for TATUADOR: ${user.id}`);
+    }
 
     // Registrar en auditoría
     await this.auditHelper.logUserCreated(
