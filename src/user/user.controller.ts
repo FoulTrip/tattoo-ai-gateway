@@ -17,13 +17,10 @@ import {
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
-  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -121,8 +118,6 @@ export class UsersController {
     const actorId = id; // Por ahora el mismo usuario
     return this.usersService.update(id, updateUserDto, actorId, ip, userAgent);
   }
-
-
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

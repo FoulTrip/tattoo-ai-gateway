@@ -21,15 +21,18 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<AuthResponseDto> {
+    // Normalize email to lowercase
+    const normalizedEmail = registerDto.email.toLowerCase();
+
     // Check if user already exists
-    const existingUser = await this.usersRepository.findByEmail(registerDto.email);
+    const existingUser = await this.usersRepository.findByEmail(normalizedEmail);
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
 
     // Create user using UsersService (which handles password hashing and tenant creation)
     const user = await this.usersService.create({
-      email: registerDto.email,
+      email: normalizedEmail,
       password: registerDto.password,
       name: registerDto.name,
       phone: registerDto.phone,
@@ -53,8 +56,11 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, ipAddress?: string, userAgent?: string): Promise<AuthResponseDto> {
+    // Normalize email to lowercase
+    const normalizedEmail = loginDto.email.toLowerCase();
+
     // Find user by email
-    const dbUser = await this.usersRepository.findByEmail(loginDto.email);
+    const dbUser = await this.usersRepository.findByEmail(normalizedEmail);
     if (!dbUser) {
       throw new UnauthorizedException('Invalid credentials');
     }

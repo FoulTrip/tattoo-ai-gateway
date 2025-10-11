@@ -64,6 +64,11 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiHeader({
+    name: 'user-agent',
+    description: 'User agent string',
+    required: false,
+  })
   @ApiOperation({
     summary: 'User login',
     description: 'Authenticates a user and returns access and refresh tokens.',
@@ -78,7 +83,7 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
     @Ip() ip: string,
-    @Headers('user-agent') userAgent: string,
+    @Headers('user-agent') userAgent?: string,
   ): Promise<AuthResponseDto> {
     return this.authService.login(loginDto, ip, userAgent);
   }

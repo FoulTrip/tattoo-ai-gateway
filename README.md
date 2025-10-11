@@ -1,98 +1,506 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Tattoo AI Gateway
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API Gateway para la plataforma de gestión de estudios de tatuajes con integración de IA.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Descripción
 
-## Description
+Tattoo AI Gateway es una API REST construida con NestJS que proporciona servicios de autenticación, gestión de usuarios, administración de estudios de tatuajes (tenants), manejo de diseños y citas, además de integración con servicios externos de procesamiento de imágenes mediante IA. El sistema implementa una arquitectura multi-tenant que permite a tatuadores gestionar sus propios espacios de trabajo con miembros, portfolios y calendarios.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Características Principales
 
-## Project setup
+### Arquitectura Multi-Tenant
+- Sistema de tenants (estudios de tatuajes) con modelo propietario-miembros
+- Gestión de invitaciones y roles (artist, manager, assistant)
+- Configuración personalizada por tenant
+
+### Gestión de Usuarios
+- Dos tipos de usuarios: TATUADOR (artistas) y CLIENTE
+- Autenticación JWT con tokens de acceso y refresco
+- Cambio de contraseña y verificación de email
+- Sistema completo de auditoría
+
+### Portfolio y Diseños
+- Colecciones organizadas de diseños
+- Catálogo de tatuajes con imágenes, estilos, precios y metadatos
+- Control de visibilidad (PUBLIC/PRIVATE)
+- Tags, categorías y búsqueda
+
+### Sistema de Citas
+- Calendarios múltiples por tenant
+- Estados de citas (PENDING, CONFIRMED, CANCELLED, COMPLETED)
+- Gestión de depósitos y precios
+- Notas y referencias de diseño
+
+### Procesamiento de Imágenes con IA
+- Integración con backend externo para procesamiento de imágenes
+- WebSockets (Socket.IO) para comunicación en tiempo real
+- Upload de imágenes y visualización de resultados
+- Sistema de jobs con seguimiento de progreso
+
+### Auditoría Completa
+- Registro detallado de todas las operaciones críticas
+- Tracking de usuarios, recursos, IPs y metadata
+- Niveles de severidad (INFO, WARNING, ERROR, CRITICAL)
+- Más de 35 tipos de eventos auditables
+
+## Tecnologías Utilizadas
+
+### Backend
+- **NestJS** - Framework Node.js progresivo
+- **TypeScript** - Lenguaje de programación tipado
+- **Prisma** - ORM moderno para MongoDB
+- **MongoDB** - Base de datos NoSQL
+
+### Autenticación y Seguridad
+- **Passport.js** - Middleware de autenticación
+- **JWT** - Tokens de autenticación
+- **bcrypt** - Hashing de contraseñas
+- **class-validator** - Validación de datos
+
+### Comunicación en Tiempo Real
+- **Socket.IO** - WebSockets para eventos en tiempo real
+- **@nestjs/websockets** - Integración de WebSockets con NestJS
+
+### Documentación y Validación
+- **Swagger/OpenAPI** - Documentación automática de API
+- **class-transformer** - Transformación de objetos
+
+### DevOps
+- **Docker** - Containerización multi-stage
+- **ESLint** - Linter de código
+- **Prettier** - Formateador de código
+- **Jest** - Framework de testing
+
+## Requisitos Previos
+
+- Node.js >= 20.x
+- npm >= 10.x
+- MongoDB Atlas o instancia de MongoDB
+- (Opcional) Docker para deployment
+
+## Instalación
+
+### 1. Clonar el repositorio
 
 ```bash
-$ npm install
+git clone <repository-url>
+cd tattoo-ai-gateway
 ```
 
-## Compile and run the project
+### 2. Instalar dependencias
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+### 3. Configurar variables de entorno
+
+Crear un archivo `.env` en la raíz del proyecto:
+
+```env
+# MongoDB Connection
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/database
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-key-change-in-production
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_SECRET=your-refresh-secret-key-change-in-production
+JWT_REFRESH_EXPIRES_IN=7d
+
+# External Services
+EXTERNAL_BACKEND_URL=http://localhost:8000
+
+# Application
+PORT=3000
+```
+
+**Nota de Seguridad:** Nunca commites el archivo `.env` al repositorio. Usa valores seguros en producción.
+
+### 4. Generar cliente de Prisma
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma generate
 ```
+
+### 5. (Opcional) Ejecutar migraciones
+
+```bash
+npx prisma db push
+```
+
+## Ejecutar la Aplicación
+
+### Modo desarrollo
+
+```bash
+npm run start:dev
+```
+
+La aplicación estará disponible en `http://localhost:3000`
+
+### Modo producción
+
+```bash
+npm run build
+npm run start:prod
+```
+
+### Con Docker
+
+```bash
+# Construir imagen
+docker build -t tattoo-ai-gateway .
+
+# Ejecutar contenedor
+docker run -p 8080:8080 \
+  -e MONGODB_URI="your-mongodb-uri" \
+  -e JWT_SECRET="your-secret" \
+  -e JWT_REFRESH_SECRET="your-refresh-secret" \
+  -e EXTERNAL_BACKEND_URL="http://external-service:8000" \
+  tattoo-ai-gateway
+```
+
+## Documentación de la API
+
+Una vez la aplicación esté corriendo, la documentación interactiva de Swagger estará disponible en:
+
+```
+http://localhost:3000/api
+```
+
+## Estructura del Proyecto
+
+```
+tattoo-ai-gateway/
+├── prisma/
+│   └── schema.prisma          # Esquema de base de datos Prisma
+├── src/
+│   ├── app.module.ts          # Módulo principal de la aplicación
+│   ├── main.ts                # Punto de entrada de la aplicación
+│   ├── auth/                  # Módulo de autenticación
+│   │   ├── auth.controller.ts # Endpoints: login, register, refresh, logout
+│   │   ├── auth.service.ts    # Lógica de autenticación JWT
+│   │   ├── guards/            # Guards de autenticación
+│   │   └── dto/               # DTOs de autenticación
+│   ├── user/                  # Módulo de usuarios
+│   │   ├── user.controller.ts # CRUD de usuarios
+│   │   ├── user.service.ts    # Lógica de negocio de usuarios
+│   │   └── dto/               # DTOs de usuarios
+│   ├── audit/                 # Módulo de auditoría
+│   │   ├── audit.service.ts   # Servicio de logging de eventos
+│   │   └── services/          # Servicios auxiliares de auditoría
+│   ├── preview/               # Módulo de procesamiento de imágenes
+│   │   ├── preview.controller.ts  # Upload de imágenes
+│   │   ├── preview.service.ts     # Integración con backend externo
+│   │   ├── preview.gateway.ts     # WebSocket gateway
+│   │   ├── dto/               # DTOs de eventos y respuestas
+│   │   └── interfaces/        # Interfaces de tipos
+│   └── prisma/                # Módulo de Prisma
+│       ├── prisma.module.ts   # Configuración de Prisma
+│       └── prisma.service.ts  # Servicio de cliente Prisma
+├── test/                      # Tests end-to-end
+├── Dockerfile                 # Configuración Docker multi-stage
+├── package.json               # Dependencias y scripts
+└── tsconfig.json              # Configuración TypeScript
+```
+
+## Modelo de Datos
+
+### Entidades Principales
+
+#### User (Usuario)
+- Tipos: TATUADOR o CLIENTE
+- Campos: email, password, name, phone, avatar
+- Relaciones: puede ser dueño de un tenant, miembro de múltiples tenants, tener citas
+
+#### Tenant (Estudio de Tatuajes)
+- Representa un estudio o espacio de trabajo
+- Campos: name, description, address, logo, configuración
+- Relaciones: owner, members, collections, calendars, appointments
+
+#### TenantMember (Miembro del Tenant)
+- Roles: artist, manager, assistant
+- Estado activo/inactivo
+- Relación many-to-many entre User y Tenant
+
+#### TenantInvitation (Invitación)
+- Estados: PENDING, ACCEPTED, REJECTED, EXPIRED
+- Token único con fecha de expiración
+
+#### DesignCollection (Colección de Diseños)
+- Agrupación de diseños
+- Visibilidad: PUBLIC o PRIVATE
+- Orden personalizable
+
+#### Design (Diseño)
+- Portfolio de tatuajes
+- Campos: title, images[], tags[], style, bodyPart, size, duration, price
+- Metadata enriquecida para búsqueda
+
+#### Calendar (Calendario)
+- Calendarios múltiples por tenant
+- Soporte para diferentes colores y propósitos
+
+#### Appointment (Cita)
+- Estados: PENDING, CONFIRMED, CANCELLED, COMPLETED
+- Campos: fechas, precios, depósito, notas, imágenes de diseño
+- Relaciones: tenant, calendar, client
+
+#### AuditLog (Log de Auditoría)
+- Registro completo de eventos del sistema
+- Campos: action, severity, actor, resource, tenant, metadata
+- Información de solicitud: IP, userAgent, endpoint
+
+## API Endpoints
+
+### Autenticación (`/auth`)
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/auth/register` | Registrar nuevo usuario | No |
+| POST | `/auth/login` | Iniciar sesión | No |
+| POST | `/auth/refresh` | Refrescar tokens | No |
+| POST | `/auth/logout` | Cerrar sesión | Sí |
+| POST | `/auth/change-password` | Cambiar contraseña | Sí |
+| POST | `/auth/verify-email` | Verificar email | Sí |
+
+### Usuarios (`/users`)
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/users` | Listar usuarios (paginado) | Sí |
+| GET | `/users/statistics` | Estadísticas de usuarios | Sí |
+| GET | `/users/:id` | Obtener usuario por ID | Sí |
+| GET | `/users/:id/details` | Detalles con relaciones | Sí |
+| PATCH | `/users/:id` | Actualizar usuario | Sí |
+| DELETE | `/users/:id` | Eliminar usuario | Sí |
+
+### Preview (Procesamiento de Imágenes) (`/preview`)
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/preview/process` | Procesar 2 imágenes con IA | Sí |
+| POST | `/preview/webhook` | Webhook para resultados | No |
+
+### WebSocket Events (`/preview` namespace)
+
+**Cliente → Servidor:**
+- `ping` - Verificar conexión
+- `process-images` - Procesar imágenes vía WebSocket
+
+**Servidor → Cliente:**
+- `connected` - Confirmación de conexión
+- `pong` - Respuesta a ping
+- `processing:started` - Procesamiento iniciado
+- `processing:progress` - Progreso del procesamiento
+- `processing:completed` - Procesamiento completado
+- `processing:error` - Error en procesamiento
+- `error` - Error general
+
+## Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run start          # Iniciar aplicación
+npm run start:dev      # Modo watch (desarrollo)
+npm run start:debug    # Modo debug
+
+# Build
+npm run build          # Compilar TypeScript
+
+# Producción
+npm run start:prod     # Ejecutar versión compilada
+
+# Code Quality
+npm run format         # Formatear código con Prettier
+npm run lint           # Ejecutar ESLint
+npm run lint:fix       # Corregir errores de ESLint
+
+# Testing
+npm run test           # Tests unitarios
+npm run test:watch     # Tests en modo watch
+npm run test:cov       # Cobertura de tests
+npm run test:e2e       # Tests end-to-end
+```
+
+## Testing
+
+### Tests Unitarios
+
+```bash
+npm run test
+```
+
+### Tests con Cobertura
+
+```bash
+npm run test:cov
+```
+
+### Tests End-to-End
+
+```bash
+npm run test:e2e
+```
+
+## Seguridad
+
+### Medidas Implementadas
+
+- Hashing de contraseñas con bcrypt (salt rounds: 10)
+- Autenticación JWT con tokens de corta duración (1h)
+- Refresh tokens para renovación segura (7d)
+- Validación estricta de datos de entrada con class-validator
+- Sanitización de campos con whitelist
+- CORS habilitado con configuración personalizable
+- Rate limiting en endpoints sensibles (recomendado en producción)
+- Auditoría completa de acciones críticas
+
+### Recomendaciones para Producción
+
+1. Cambiar todos los secretos en variables de entorno
+2. Implementar rate limiting
+3. Configurar CORS específicamente para tus dominios
+4. Habilitar HTTPS
+5. Implementar refresh token rotation
+6. Agregar helmet.js para headers de seguridad
+7. Configurar logs en servicio externo
+8. Implementar monitoreo y alertas
+
+## Variables de Entorno
+
+| Variable | Descripción | Requerida | Default |
+|----------|-------------|-----------|---------|
+| `MONGODB_URI` | URI de conexión a MongoDB | Sí | - |
+| `JWT_SECRET` | Secreto para firmar tokens JWT | Sí | - |
+| `JWT_EXPIRES_IN` | Duración del access token | No | `1h` |
+| `JWT_REFRESH_SECRET` | Secreto para refresh tokens | Sí | - |
+| `JWT_REFRESH_EXPIRES_IN` | Duración del refresh token | No | `7d` |
+| `EXTERNAL_BACKEND_URL` | URL del servicio de procesamiento de imágenes | No | `http://localhost:8000` |
+| `PORT` | Puerto de la aplicación | No | `3000` |
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Docker
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+El proyecto incluye un `Dockerfile` multi-stage optimizado:
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+- **Builder stage**: Compila la aplicación con todas las dependencias
+- **Production stage**: Imagen final ligera solo con producción
+- Usuario no-root para seguridad
+- Health check incluido
+- Ejecución automática de migraciones al inicio
+
+### Docker Compose (Ejemplo)
+
+```yaml
+version: '3.8'
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - EXTERNAL_BACKEND_URL=http://ai-service:8000
+    depends_on:
+      - ai-service
+    restart: unless-stopped
+
+  ai-service:
+    image: your-ai-processing-service:latest
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Cloud Platforms
 
-## Resources
+El proyecto es compatible con:
+- AWS (ECS, Fargate, Lambda)
+- Google Cloud (Cloud Run, GKE)
+- Azure (Container Instances, AKS)
+- Heroku
+- DigitalOcean App Platform
+- Railway
 
-Check out a few resources that may come in handy when working with NestJS:
+## Monitoreo y Logging
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Logs de Aplicación
 
-## Support
+NestJS proporciona logging integrado. Los logs incluyen:
+- Inicio de la aplicación
+- Conexiones de base de datos
+- Errores de autenticación
+- Procesamiento de imágenes
+- Eventos de WebSocket
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Auditoría
 
-## Stay in touch
+Todos los eventos críticos se registran en la colección `audit_logs`:
+- Acciones de usuarios (login, logout, cambios)
+- Operaciones de tenants
+- Invitaciones y membresías
+- Creación y modificación de diseños
+- Gestión de citas
+- Eventos de seguridad
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Contribuir
 
-## License
+1. Fork el repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Guía de Estilo
+
+- Seguir las convenciones de TypeScript y NestJS
+- Usar ESLint y Prettier (configuración incluida)
+- Escribir tests para nuevas funcionalidades
+- Documentar endpoints con decoradores de Swagger
+- Validar todos los DTOs con class-validator
+
+## Roadmap
+
+- [ ] Implementación completa de módulo Tenants (CRUD)
+- [ ] Módulo de gestión de diseños y colecciones
+- [ ] Sistema de citas con calendario interactivo
+- [ ] Sistema de notificaciones (email, push)
+- [ ] Panel de administración
+- [ ] Reportes y analytics
+- [ ] Integración con pasarelas de pago
+- [ ] Chat en tiempo real entre clientes y tatuadores
+- [ ] Sistema de reviews y ratings
+- [ ] Galería pública de diseños
+- [ ] Búsqueda avanzada con filtros
+
+## Problemas Conocidos
+
+Consulta la sección de [Issues](../../issues) en GitHub para problemas conocidos y próximas mejoras.
+
+## Licencia
+
+UNLICENSED - Todos los derechos reservados.
+
+## Soporte
+
+Para preguntas o soporte:
+- Abrir un issue en GitHub
+- Contactar al equipo de desarrollo
+
+## Autores
+
+- Equipo de desarrollo Tattoo AI Gateway
+
+## Agradecimientos
+
+- NestJS por el excelente framework
+- Prisma por el ORM moderno
+- Comunidad de código abierto
+
+---
+
+**Nota:** Este proyecto está en desarrollo activo. La API y la documentación pueden cambiar.
