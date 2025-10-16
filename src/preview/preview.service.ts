@@ -10,7 +10,7 @@ import { ExternalBackendResponse } from './interfaces/external-backend-response.
 export class PreviewService {
   private readonly logger = new Logger(PreviewService.name);
   private readonly externalBackendUrl: string;
-  private jobToUser: Map<string, string> = new Map();
+  private jobToSocket: Map<string, string> = new Map();
 
   constructor(
     private readonly httpService: HttpService,
@@ -20,31 +20,31 @@ export class PreviewService {
   ) {
     this.externalBackendUrl = this.configService.get<string>(
       'EXTERNAL_BACKEND_URL',
-      'http://localhost:5000/api/process',
+      'http://localhost:8000/upload/',
     );
     this.logger.log(`External backend URL: ${this.externalBackendUrl}`);
   }
 
   async processImages(
     files: Array<Express.Multer.File>,
-    userId: string,
+    socketId: string,
   ): Promise<string> {
     try {
-      const jobId = await this.sendToExternalBackend(files, userId);
-      this.logger.log(`Started job ${jobId} for user ${userId}`);
+      const jobId = await this.sendToExternalBackend(files, socketId);
+      this.logger.log(`Started job ${jobId} for socket ${socketId}`);
       return jobId;
     } catch (error) {
-      this.logger.error(`Error starting job for user ${userId}:`, error.message);
+      this.logger.error(`Error starting job for socket ${socketId}:`, error.message);
       throw error;
     }
   }
 
   private async sendToExternalBackend(
     files: Array<Express.Multer.File>,
-    userId: string,
+    socketId: string,
   ): Promise<string> {
     try {
-      // Preparar FormData con las imágenes
+      // Preparar FormData con las imágenes y socketId
       const formData = new FormData();
       formData.append('body_image', files[0].buffer, {
         filename: files[0].originalname,
@@ -54,48 +54,63 @@ export class PreviewService {
         filename: files[1].originalname,
         contentType: files[1].mimetype,
       });
+      formData.append('socket_id', socketId);
 
-      this.logger.log(`Sending images to external backend for user ${userId}`);
+      this.logger.log(`FormData prepared with:`);
+      this.logger.log(`- body_image: ${files[0].originalname} (${files[0].mimetype}, ${files[0].buffer.length} bytes)`);
+      this.logger.log(`- tattoo_image: ${files[1].originalname} (${files[1].mimetype}, ${files[1].buffer.length} bytes)`);
+      this.logger.log(`- socket_id: ${socketId}`);
+      this.logger.log(`FormData headers: ${JSON.stringify(formData.getHeaders())}`);
+
+      this.logger.log(`Sending images to external backend for socket ${socketId}`);
 
       // Enviar al backend externo
+      this.logger.log(`Making POST request to: ${this.externalBackendUrl}`);
+      const requestConfig = {
+        headers: {
+          ...formData.getHeaders(),
+        },
+        timeout: 300000, // 5 minutos de timeout
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+      };
+      this.logger.log(`Request config: ${JSON.stringify(requestConfig)}`);
+
       const response = await firstValueFrom(
         this.httpService.post<ExternalBackendResponse>(
           this.externalBackendUrl,
           formData,
-          {
-            headers: {
-              ...formData.getHeaders(),
-            },
-            timeout: 300000, // 5 minutos de timeout
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
-          },
+          requestConfig,
         ),
       );
 
-      this.logger.log(`Received response from external backend`);
+      this.logger.log(`Received response from external backend:`);
+      this.logger.log(`- Status: ${response.status}`);
+      this.logger.log(`- Status text: ${response.statusText}`);
+      this.logger.log(`- Headers: ${JSON.stringify(response.headers)}`);
+      this.logger.log(`- Data: ${JSON.stringify(response.data)}`);
 
       if (response.data.status !== 'success') {
         throw new Error(response.data.message || 'Unknown error');
       }
 
-      const jobId = response.data.body_image.filename.split('_')[1]; // Extract uuid from "body_uuid"
-      this.jobToUser.set(jobId, userId);
+      const jobId = response.data.body_image.filename.split('_')[1];
+      this.jobToSocket.set(jobId, socketId);
 
       // Notificar que comenzó el procesamiento
-      this.previewGateway.sendProcessingStarted(userId, jobId);
+      this.previewGateway.sendProcessingStarted(jobId);
 
       return jobId;
     } catch (error) {
       this.logger.error(
-        `Error in sendToExternalBackend for user ${userId}:`,
+        `Error in sendToExternalBackend for socket ${socketId}:`,
         error.response?.data || error.message
       );
       throw error;
     }
   }
 
-  getUserForJob(jobId: string): string | undefined {
-    return this.jobToUser.get(jobId);
+  getSocketForJob(jobId: string): string | undefined {
+    return this.jobToSocket.get(jobId);
   }
 }

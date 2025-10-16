@@ -53,6 +53,36 @@ export class UserResponseDto {
     })
     updatedAt: Date;
 
+    @ApiPropertyOptional({
+        description: 'Tenant information (only for TATUADOR users)',
+        example: {
+            id: '507f1f77bcf86cd799439011',
+            name: 'John Doe Studio',
+            email: 'studio@example.com',
+        },
+    })
+    tenant?: {
+        id: string;
+        name: string;
+        email: string | null;
+    };
+
+    @ApiPropertyOptional({
+        description: 'Default calendar information (created automatically)',
+        example: {
+            id: '507f1f77bcf86cd799439012',
+            name: 'Main Calendar',
+            color: '#3B82F6',
+            isDefault: true,
+        },
+    })
+    calendar?: {
+        id: string;
+        name: string;
+        color: string | null;
+        isDefault: boolean;
+    };
+
     @Exclude()
     password: string;
 

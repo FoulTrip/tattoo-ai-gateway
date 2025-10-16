@@ -21,7 +21,6 @@ import {
   ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { PreviewService } from './preview.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProcessResponseDto } from './dto/process-response.dto';
 import { UserResponseDto } from '../user/dto/user-response.dto';
 import { PreviewGateway } from './preview.gateway';
@@ -34,7 +33,6 @@ declare module 'express' {
 
 @ApiTags('preview')
 @Controller('preview')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PreviewController {
   private readonly logger = new Logger(PreviewController.name);
@@ -103,11 +101,12 @@ export class PreviewController {
       }
     }
 
-    const userId = req.user.id;
-    const jobId = await this.previewService.processImages(files, userId);
+    const socketId = 'placeholder'; // TODO: Get actual socketId from request
+    const jobId = await this.previewService.processImages(files, socketId);
 
     // Emitir evento sobre comienzo de procesamiento
-    this.websocket.sendProcessingStarted(userId, jobId);
+    this.logger.log(`Calling sendProcessingStarted with jobId: ${jobId}`);
+    this.websocket.sendProcessingStarted(jobId);
 
     return {
       jobId,
@@ -117,14 +116,14 @@ export class PreviewController {
   }
 
   @Post('webhook')
-  @UseGuards()
-  async handleWebhook(@Body() body: { jobId: string; data: any }) {
-    const userId = this.previewService.getUserForJob(body.jobId);
-    if (userId) {
-      this.websocket.sendProcessedImage(userId, body.jobId, body.data);
-      this.logger.log(`Sent processed image for job ${body.jobId} to user ${userId}`);
-    } else {
-      this.logger.warn(`No user found for job ${body.jobId}`);
-    }
+  async handleWebhook(@Body() body: { jobId: string; socketId: string; data: any }) {
+    this.logger.log(`=== WEBHOOK RECEIVED ===`);
+    this.logger.log(`JobId: ${body.jobId}`);
+    this.logger.log(`SocketId: ${body.socketId}`);
+    this.logger.log(`Data: ${JSON.stringify(body.data)}`);
+
+    // Send directly to the specific socket
+    this.logger.log(`Sending directly to socketId: ${body.socketId}`);
+    this.websocket.sendProcessedImageToSocket(body.socketId, body.jobId, body.data);
   }
 }

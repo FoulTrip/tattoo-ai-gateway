@@ -39,9 +39,13 @@ export class UsersService {
       password: hashedPassword,
     });
 
-    // Si el usuario es TATUADOR, crear un tenant
+    let createdTenant: any = null;
+    let createdCalendar: any = null;
+
+    // Si el usuario es TATUADOR, crear tenant y calendario
     if (user.userType === UserType.TATUADOR) {
-      await this.prisma.tenant.create({
+      // Crear el tenant
+      createdTenant = await this.prisma.tenant.create({
         data: {
           name: `${user.name} Studio`,
           ownerId: user.id,
@@ -51,6 +55,101 @@ export class UsersService {
       });
 
       this.logger.log(`Tenant created for TATUADOR: ${user.id}`);
+
+      // Crear el calendario por defecto del tenant
+      createdCalendar = await this.prisma.calendar.create({
+        data: {
+          name: 'Main Calendar',
+          description: 'Default calendar for appointments',
+          color: '#3B82F6', // Blue
+          isDefault: true,
+          tenantId: createdTenant.id,
+        },
+      });
+
+      this.logger.log(`Calendar created for Tenant: ${createdTenant.id}`);
+
+      // Auditar creación del tenant
+      await this.auditService.log({
+        action: 'TENANT_CREATED',
+        severity: 'INFO',
+        description: `Tenant created for TATUADOR: ${createdTenant.name}`,
+        resourceId: createdTenant.id,
+        resourceType: 'TENANT',
+        resourceName: createdTenant.name,
+        actorId: user.id,
+        actorEmail: user.email,
+        actorName: user.name,
+        tenantId: createdTenant.id,
+        tenantName: createdTenant.name,
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          ownerId: user.id,
+        },
+      });
+
+      // Auditar creación del calendar
+      await this.auditService.log({
+        action: 'CALENDAR_CREATED',
+        severity: 'INFO',
+        description: `Default calendar created for tenant: ${createdTenant.name}`,
+        resourceId: createdCalendar.id,
+        resourceType: 'CALENDAR',
+        resourceName: createdCalendar.name,
+        actorId: user.id,
+        tenantId: createdTenant.id,
+        tenantName: createdTenant.name,
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          isDefault: true,
+          color: createdCalendar.color,
+        },
+      });
+    }
+
+    // Si el usuario es CLIENTE, crear un calendario personal (sin tenant)
+    // Nota: Los clientes pueden tener un calendario para ver sus citas
+    // pero necesitarán asociarse a un tenant específico para agendar
+    if (user.userType === UserType.CLIENTE) {
+      // Por ahora, los clientes no necesitan un calendario propio
+      // ya que verán las citas a través del tenant del tatuador
+      // Si necesitas crear uno, descomenta el siguiente código:
+      /*
+      createdCalendar = await this.prisma.calendar.create({
+        data: {
+          name: `${user.name}'s Calendar`,
+          description: 'Personal calendar',
+          color: '#10B981', // Green
+          isDefault: true,
+          tenantId: null, // Sin tenant, es personal
+        },
+      });
+
+      this.logger.log(`Personal calendar created for CLIENTE: ${user.id}`);
+
+      // Auditar creación del calendar personal
+      await this.auditService.log({
+        action: 'CALENDAR_CREATED',
+        severity: 'INFO',
+        description: `Personal calendar created for client: ${user.name}`,
+        resourceId: createdCalendar.id,
+        resourceType: 'CALENDAR',
+        resourceName: createdCalendar.name,
+        actorId: user.id,
+        actorEmail: user.email,
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          isPersonal: true,
+          clientId: user.id,
+        },
+      });
+      */
     }
 
     // Registrar en auditoría
@@ -68,11 +167,32 @@ export class UsersService {
     );
 
     this.logger.log(`User created successfully: ${user.id}`);
-    return new UserResponseDto({
+
+    const response: any = {
       ...user,
       phone: user.phone ?? undefined,
       avatar: user.avatar ?? undefined,
-    });
+    };
+
+    // Incluir información adicional en la respuesta
+    if (createdTenant) {
+      response.tenant = {
+        id: createdTenant.id,
+        name: createdTenant.name,
+        email: createdTenant.email,
+      };
+    }
+
+    if (createdCalendar) {
+      response.calendar = {
+        id: createdCalendar.id,
+        name: createdCalendar.name,
+        color: createdCalendar.color,
+        isDefault: createdCalendar.isDefault,
+      };
+    }
+
+    return new UserResponseDto(response);
   }
 
   async findAll(query: QueryUserDto): Promise<{
