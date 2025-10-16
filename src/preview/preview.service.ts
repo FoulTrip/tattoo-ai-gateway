@@ -28,9 +28,18 @@ export class PreviewService {
   async processImages(
     files: Array<Express.Multer.File>,
     socketId: string,
+    styles?: string[],
+    colors?: string[],
+    description?: string,
   ): Promise<string> {
     try {
-      const jobId = await this.sendToExternalBackend(files, socketId);
+      const jobId = await this.sendToExternalBackend(
+        files,
+        socketId,
+        styles,
+        colors,
+        description,
+      );
       this.logger.log(`Started job ${jobId} for socket ${socketId}`);
       return jobId;
     } catch (error) {
@@ -42,6 +51,9 @@ export class PreviewService {
   private async sendToExternalBackend(
     files: Array<Express.Multer.File>,
     socketId: string,
+    styles?: string[],
+    colors?: string[],
+    description?: string
   ): Promise<string> {
     try {
       // Preparar FormData con las imágenes y socketId
@@ -55,11 +67,23 @@ export class PreviewService {
         contentType: files[1].mimetype,
       });
       formData.append('socket_id', socketId);
+      if (styles && styles.length > 0) {
+        formData.append('styles', JSON.stringify(styles));
+      }
+      if (colors && colors.length > 0) {
+        formData.append('colors', JSON.stringify(colors));
+      }
+      if (description) {
+        formData.append('description', description);
+      }
 
       this.logger.log(`FormData prepared with:`);
       this.logger.log(`- body_image: ${files[0].originalname} (${files[0].mimetype}, ${files[0].buffer.length} bytes)`);
       this.logger.log(`- tattoo_image: ${files[1].originalname} (${files[1].mimetype}, ${files[1].buffer.length} bytes)`);
       this.logger.log(`- socket_id: ${socketId}`);
+      this.logger.log(`- styles: ${styles}`);
+      this.logger.log(`- colors: ${colors}`);
+      this.logger.log(`- description: ${description}`);
       this.logger.log(`FormData headers: ${JSON.stringify(formData.getHeaders())}`);
 
       this.logger.log(`Sending images to external backend for socket ${socketId}`);

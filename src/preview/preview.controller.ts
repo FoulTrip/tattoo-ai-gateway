@@ -78,6 +78,7 @@ export class PreviewController {
   }))
   async processImages(
     @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() body: { styles: string[], colors: string[], description: string },
     @Request() req: ExpressRequest,
   ): Promise<ProcessResponseDto> {
     if (!files || files.length !== 2) {
@@ -102,7 +103,10 @@ export class PreviewController {
     }
 
     const socketId = 'placeholder'; // TODO: Get actual socketId from request
-    const jobId = await this.previewService.processImages(files, socketId);
+    const styles = body.styles;
+    const colors = body.colors;
+    const description = body.description;
+    const jobId = await this.previewService.processImages(files, socketId, styles, colors, description);
 
     // Emitir evento sobre comienzo de procesamiento
     this.logger.log(`Calling sendProcessingStarted with jobId: ${jobId}`);

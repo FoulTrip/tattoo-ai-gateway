@@ -61,11 +61,12 @@ export class PreviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
   @SubscribeMessage('process-images')
   async handleProcessImages(
     @ConnectedSocket() client: Socket,
-    @MessageBody() files: string[]
+    @MessageBody() data: { files: string[]; styles?: string[]; colors?: string[]; description?: string },
   ) {
+    const { files, styles, colors, description } = data;
     this.logger.log(`Received WebSocket files: ${files?.length} items from socket ${client.id}`);
 
-    if (!files || files.length !== 2) {
+    if (!files || !Array.isArray(files) || files.length !== 2) {
       this.logger.error(`Invalid files received: files is ${files}, length is ${files?.length}`);
       client.emit('error', { message: 'Exactly 2 images are required' });
       return;
@@ -97,7 +98,7 @@ export class PreviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
       });
 
       // Pass socketId to the service
-      const jobId = await this.previewService.processImages(processedFiles, client.id);
+      const jobId = await this.previewService.processImages(processedFiles, client.id, styles, colors, description);
 
       // Emit back the jobId or something
       client.emit('processing-started', { jobId, message: 'Images are being processed' });
