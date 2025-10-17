@@ -22,9 +22,26 @@ async function bootstrap() {
   // Configure Swagger
   const config = new DocumentBuilder()
     .setTitle('Tattoo AI Gateway API')
-    .setDescription('API for Tattoo AI Gateway - User Management System')
+    .setDescription('API for Tattoo AI Gateway - Complete Tattoo Management System')
     .setVersion('1.0')
     .addTag('users', 'User management endpoints')
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('appointments', 'Appointment management endpoints')
+    .addTag('appointment-requests', 'Appointment request system endpoints')
+    .addTag('mail', 'Email service endpoints')
+    .addTag('preview', 'AI preview processing endpoints')
+    .addTag('audit', 'Audit log endpoints')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

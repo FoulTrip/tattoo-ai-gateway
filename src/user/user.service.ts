@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { HelpersAuditService } from '../audit/services/helpers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserType } from '@prisma/client';
+import { MailService } from '../mail/services/mail.service';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,7 @@ export class UsersService {
     private readonly auditHelper: HelpersAuditService,
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) { }
 
   async create(createUserDto: CreateUserDto, ipAddress?: string, userAgent?: string): Promise<UserResponseDto> {
@@ -150,6 +152,22 @@ export class UsersService {
         },
       });
       */
+    }
+
+    // Enviar email de bienvenida
+    try {
+      await this.mailService.sendMail({
+        to: user.email,
+        subject: 'Bienvenido a Tattoo AI',
+        template: 'welcome',
+        templateData: {
+          name: user.name,
+        },
+      });
+      this.logger.log(`Welcome email sent to: ${user.email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send welcome email to ${user.email}`, error);
+      // No fallar la creación del usuario por error en envío de email
     }
 
     // Registrar en auditoría

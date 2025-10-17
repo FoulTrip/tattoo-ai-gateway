@@ -108,6 +108,19 @@ export class PreviewGateway implements OnGatewayConnection, OnGatewayDisconnect 
     }
   }
 
+  @SubscribeMessage('generate-design')
+  async handleRandomDesign(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { description: string },
+  ) {
+    const { description } = data;
+
+    if (!data.description && data.description.length === 0) {
+      client.emit('error', { message: "description is require" })
+    }
+
+  }
+
   private getMimeType(buffer: Buffer): string {
     // Simple MIME type detection based on magic numbers
     if (buffer.length < 4) return 'application/octet-stream';

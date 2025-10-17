@@ -40,13 +40,13 @@ enum AuditAction {
   USER_LOGOUT
   USER_PASSWORD_CHANGED
   USER_EMAIL_VERIFIED
-  
+
   // Acciones de Tenant
   TENANT_CREATED
   TENANT_UPDATED
   TENANT_DELETED
   TENANT_SETTINGS_CHANGED
-  
+
   // Acciones de Membresía
   MEMBER_INVITED
   MEMBER_JOINED
@@ -55,14 +55,14 @@ enum AuditAction {
   MEMBER_ROLE_CHANGED
   MEMBER_ACTIVATED
   MEMBER_DEACTIVATED
-  
+
   // Acciones de Invitaciones
   INVITATION_SENT
   INVITATION_ACCEPTED
   INVITATION_REJECTED
   INVITATION_EXPIRED
   INVITATION_CANCELLED
-  
+
   // Acciones de Diseños
   COLLECTION_CREATED
   COLLECTION_UPDATED
@@ -72,7 +72,7 @@ enum AuditAction {
   DESIGN_UPDATED
   DESIGN_DELETED
   DESIGN_VISIBILITY_CHANGED
-  
+
   // Acciones de Citas
   APPOINTMENT_CREATED
   APPOINTMENT_UPDATED
@@ -81,25 +81,32 @@ enum AuditAction {
   APPOINTMENT_COMPLETED
   APPOINTMENT_RESCHEDULED
   APPOINTMENT_NO_SHOW
-  
+
+  // Acciones de Solicitudes de Citas
+  APPOINTMENT_REQUEST_CREATED
+  APPOINTMENT_REQUEST_ACCEPTED
+  APPOINTMENT_REQUEST_CANCELLED
+  APPOINTMENT_REQUEST_EXPIRED
+  APPOINTMENT_CREATED_FROM_REQUEST
+
   // Acciones de Calendario
   CALENDAR_CREATED
   CALENDAR_UPDATED
   CALENDAR_DELETED
-  
+
   // Acciones de Pagos
   PAYMENT_DEPOSIT_RECEIVED
   PAYMENT_COMPLETED
   PAYMENT_REFUNDED
   PAYMENT_FAILED
-  
+
   // Acciones de Seguridad
   SECURITY_SUSPICIOUS_LOGIN
   SECURITY_ACCOUNT_LOCKED
   SECURITY_ACCOUNT_UNLOCKED
   SECURITY_2FA_ENABLED
   SECURITY_2FA_DISABLED
-  
+
   // Acciones de Sistema
   SYSTEM_ERROR
   SYSTEM_MAINTENANCE
@@ -131,20 +138,21 @@ model User {
 
   // Relaciones para tipo CLIENTE
   appointments Appointment[]
+  appointmentRequests AppointmentRequest[] @relation("ClientRequests")
 
   @@map("users")
 }
 
 // Modelo Tenant (Estudio/Espacio del Tatuador)
 model Tenant {
-  id          String   @id @default(uuid()) @map("_id")
+  id          String  @id @default(uuid()) @map("_id")
   name        String
   description String?
   address     String?
   phone       String?
   email       String?
   logo        String?
-  
+
   // Configuración de invitaciones
   invitationEnabled Boolean @default(true)
   requireApproval   Boolean @default(true)
@@ -153,11 +161,12 @@ model Tenant {
   ownerId String @unique
   owner   User   @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  members       TenantMember[]
-  invitations   TenantInvitation[]
+  members      TenantMember[]
+  invitations  TenantInvitation[]
   collections   DesignCollection[]
   calendars     Calendar[]
   appointments  Appointment[]
+  acceptedRequests AppointmentRequest[] @relation("AcceptedRequests")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -170,10 +179,10 @@ model TenantMember {
   id       String  @id @default(uuid()) @map("_id")
   role     String  @default("artist") // artist, manager, assistant
   isActive Boolean @default(true)
-  
+
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -193,7 +202,7 @@ model TenantInvitation {
   status    InvitationStatus @default(PENDING)
   token     String           @unique
   expiresAt DateTime
-  
+
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -211,7 +220,7 @@ model DesignCollection {
   coverImage  String?
   visibility  VisibilityType @default(PRIVATE)
   order       Int            @default(0)
-  
+
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -228,16 +237,16 @@ model Design {
   id          String         @id @default(uuid()) @map("_id")
   title       String
   description String?
-  images      String[]       // Array de URLs de imágenes
-  tags        String[]       // Tags para búsqueda
-  style       String?        // Estilo de tatuaje: realismo, tradicional, etc.
-  bodyPart    String?        // Parte del cuerpo sugerida
-  size        String?        // Tamaño: pequeño, mediano, grande
-  duration    Int?           // Duración estimada en minutos
-  price       Float?         // Precio estimado
+  images      String[] // Array de URLs de imágenes
+  tags        String[] // Tags para búsqueda
+  style       String? // Estilo de tatuaje: realismo, tradicional, etc.
+  bodyPart    String? // Parte del cuerpo sugerida
+  size        String? // Tamaño: pequeño, mediano, grande
+  duration    Int? // Duración estimada en minutos
+  price       Float? // Precio estimado
   visibility  VisibilityType @default(PRIVATE)
   order       Int            @default(0)
-  
+
   collectionId String
   collection   DesignCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
@@ -254,7 +263,7 @@ model Calendar {
   description String?
   color       String? // Color para visualización
   isDefault   Boolean @default(false)
-  
+
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -268,25 +277,28 @@ model Calendar {
 
 // Modelo de Cita
 model Appointment {
-  id            String            @id @default(uuid()) @map("_id")
-  title         String
-  description   String?
-  startTime     DateTime
-  endTime       DateTime
-  status        AppointmentStatus @default(PENDING)
-  deposit       Float?            // Depósito pagado
-  totalPrice    Float?
-  notes         String?           // Notas adicionales
-  designImages  String[]          // Referencias de diseño
-  
+  id           String            @id @default(uuid()) @map("_id")
+  title        String
+  description  String?
+  startTime    DateTime
+  endTime      DateTime
+  status       AppointmentStatus @default(PENDING)
+  deposit      Float? // Depósito pagado
+  totalPrice   Float?
+  notes        String? // Notas adicionales
+  designImages String[] // Referencias de diseño
+
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+
   calendarId String
   calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
-  
+
   clientId String
   client   User   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Relación con solicitud original (opcional)
+  fromRequestId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -296,45 +308,46 @@ model Appointment {
 
 // Modelo de Auditoría para registrar todos los procesos críticos
 model AuditLog {
-  id          String         @id @default(uuid()) @map("_id")
-  action      AuditAction    // Tipo de acción realizada
-  severity    AuditSeverity  @default(INFO)
-  description String         // Descripción detallada del evento
-  
+  id          String        @id @default(uuid()) @map("_id")
+  action      AuditAction // Tipo de acción realizada
+  severity    AuditSeverity @default(INFO)
+  description String // Descripción detallada del evento
+
   // Información del actor (quien realizó la acción)
-  actorId     String?        // ID del usuario que ejecutó la acción
-  actorType   String?        // Tipo: USER, SYSTEM, EXTERNAL_SERVICE
-  actorEmail  String?        // Email del actor para referencia
-  actorName   String?        // Nombre del actor
-  
+  actorId    String? // ID del usuario que ejecutó la acción
+  actorType  String? // Tipo: USER, SYSTEM, EXTERNAL_SERVICE
+  actorEmail String? // Email del actor para referencia
+  actorName  String? // Nombre del actor
+
   // Información del recurso afectado
-  resourceId   String?       // ID del recurso afectado
-  resourceType String?       // Tipo: USER, TENANT, APPOINTMENT, DESIGN, etc.
-  resourceName String?       // Nombre/título del recurso
-  
+  resourceId   String? // ID del recurso afectado
+  resourceType String? // Tipo: USER, TENANT, APPOINTMENT, DESIGN, etc.
+  resourceName String? // Nombre/título del recurso
+
   // Información del tenant (contexto)
-  tenantId   String?        // ID del tenant relacionado (si aplica)
-  tenantName String?        // Nombre del tenant para referencia
-  
+  tenantId   String? // ID del tenant relacionado (si aplica)
+  tenantName String? // Nombre del tenant para referencia
+
   // Datos adicionales
-  metadata   Json?          // Objeto JSON con datos adicionales del evento
-  oldValues  Json?          // Valores anteriores (para updates)
-  newValues  Json?          // Valores nuevos (para updates)
-  
+  metadata  Json? // Objeto JSON con datos adicionales del evento
+  oldValues Json? // Valores anteriores (para updates)
+  newValues Json? // Valores nuevos (para updates)
+
   // Información de la solicitud
-  ipAddress  String?        // IP desde donde se realizó la acción
-  userAgent  String?        // User agent del navegador/app
-  endpoint   String?        // Endpoint de API llamado
-  method     String?        // Método HTTP (GET, POST, etc.)
-  
+  ipAddress String? // IP desde donde se realizó la acción
+  userAgent String? // User agent del navegador/app
+  endpoint  String? // Endpoint de API llamado
+  method    String? // Método HTTP (GET, POST, etc.)
+
   // Estado y resultado
-  success    Boolean        @default(true)
-  errorCode  String?        // Código de error si falló
-  errorMessage String?      // Mensaje de error detallado
-  
+  success      Boolean @default(true)
+  errorCode    String? // Código de error si falló
+  errorMessage String? // Mensaje de error detallado
+
   // Temporal
-  timestamp  DateTime       @default(now())
-  createdAt  DateTime       @default(now())
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+  // Modelo de Correo Electrónico
 
   @@index([action])
   @@index([actorId])
@@ -343,4 +356,60 @@ model AuditLog {
   @@index([timestamp])
   @@index([severity])
   @@map("audit_logs")
+}
+
+model Mail {
+  id           String    @id @default(uuid()) @map("_id")
+  to           String
+  cc           String[]
+  bcc          String[]
+  subject      String
+  html         String?
+  text         String?
+  template     String?
+  templateData Json?
+  status       String    @default("queued") // sent, failed, queued
+  resendId     String?
+  errorMsg     String?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("mails")
+}
+
+enum AppointmentRequestStatus {
+  PENDING     // Esperando que un tenant la acepte
+  ACCEPTED    // Un tenant la aceptó
+  EXPIRED     // Expiró sin ser aceptada
+  CANCELLED   // Cancelada por el cliente
+  COMPLETED   // Convertida en cita real
+}
+
+// Modelo de Solicitud de Cita
+model AppointmentRequest {
+  id          String                  @id @default(uuid()) @map("_id")
+  title       String
+  description String?
+  budget      Float                   // Presupuesto máximo que está dispuesto a pagar
+  designImages String[]               // Fotos del diseño que quiere
+  preferences Json?                   // Preferencias: estilo, tamaño, parte del cuerpo, etc.
+  status      AppointmentRequestStatus @default(PENDING)
+  expiresAt   DateTime                // Fecha de expiración de la solicitud
+
+  // Relaciones
+  clientId    String
+  client      User                    @relation("ClientRequests", fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Una vez aceptada, se relaciona con el tenant que la aceptó
+  acceptedByTenantId String?
+  acceptedByTenant   Tenant?          @relation("AcceptedRequests", fields: [acceptedByTenantId], references: [id])
+
+  // Una vez completada, se convierte en una cita real
+  resultingAppointmentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment_requests")
 }

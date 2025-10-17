@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { PreviewModule } from './preview/preview.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   controllers: [AppController],
@@ -20,6 +21,7 @@ import { AppointmentModule } from './appointment/appointment.module';
     PrismaModule,
     PreviewModule,
     AppointmentModule,
+    MailModule,
   ],
 })
 export class AppModule {}
